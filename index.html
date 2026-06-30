@@ -147,6 +147,7 @@
     border-radius: 999px;
     border: 1.5px solid #e9d3d8;
     position:absolute;
+    top:0;
     transition: top 0.18s ease, left 0.18s ease, transform 0.15s ease;
   }
 
@@ -292,6 +293,40 @@
   @media (prefers-reduced-motion: reduce){
     .petal, .heart-wrap svg, .card{ animation: none !important; }
   }
+
+  /* ---------- Mobile tuning ---------- */
+  @media (max-width: 480px){
+    body{ padding: 18px 12px; align-items:flex-start; }
+    .card{ padding: 32px 22px 28px; border-radius: 22px; max-width: 100%; }
+    h1{ font-size: 24px; }
+    .sub{ font-size: 14px; margin-bottom: 22px; }
+    .heart-wrap{ width: 72px; height:72px; margin-bottom: 18px; }
+
+    .yn-row{ flex-direction: column; align-items:center; min-height: 150px; padding-top: 6px; }
+    .btn-yes{ width: 100%; padding: 15px 20px; }
+    .btn-no{ padding: 13px 24px; font-size: 14px; }
+
+    .grid{ grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .opt{ padding: 12px 4px; font-size: 13px; }
+
+    .choice-row{ grid-template-columns: 1fr; gap: 10px; }
+    .choice-card{ display:flex; align-items:center; gap: 12px; padding: 14px 16px; text-align:left; }
+    .choice-card .emoji{ margin-bottom:0; font-size: 26px; }
+
+    .summary{ padding: 16px 16px; }
+    .summary-row{ font-size: 13.5px; }
+
+    .petal{ display:none; }
+  }
+
+  /* small phones */
+  @media (max-width: 360px){
+    h1{ font-size: 21px; }
+  }
+
+  /* Reduce paint cost */
+  .petal{ will-change: transform; }
+  .card{ will-change: transform, opacity; }
 </style>
 </head>
 <body>
@@ -316,9 +351,9 @@
     <h1>Will you go on a date<br>with me?</h1>
     <p class="sub">No pressure. Just two people, good food, and time well spent together.</p>
 
-    <div class="yn-row">
+    <div class="yn-row" id="ynRow">
       <button class="btn-yes" onclick="goToStep(1)">Yes, I'd love to</button>
-      <button class="btn-no" id="noBtn">No</button>
+      <button class="btn-no" id="noBtn" style="position:static; margin-left:4px;">No</button>
     </div>
     <div class="hint" id="hint"></div>
   </div>
@@ -378,24 +413,31 @@
 </div>
 
 <script>
-  // ---------- Floating petals background ----------
-  const petalEmojis = ['🌸','💗','🌹'];
-  for(let i=0;i<14;i++){
-    const p = document.createElement('div');
-    p.className='petal';
-    p.textContent = petalEmojis[Math.floor(Math.random()*petalEmojis.length)];
-    p.style.left = Math.random()*100+'vw';
-    p.style.animationDuration = (8+Math.random()*10)+'s';
-    p.style.animationDelay = (Math.random()*10)+'s';
-    p.style.fontSize = (16+Math.random()*14)+'px';
-    document.body.appendChild(p);
+  // ---------- Floating petals background (skip on small/low-power screens) ----------
+  const isMobile = window.matchMedia('(max-width: 480px)').matches;
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!isMobile && !prefersReducedMotion){
+    const petalEmojis = ['🌸','💗','🌹'];
+    const frag = document.createDocumentFragment();
+    for(let i=0;i<10;i++){
+      const p = document.createElement('div');
+      p.className='petal';
+      p.textContent = petalEmojis[Math.floor(Math.random()*petalEmojis.length)];
+      p.style.left = Math.random()*100+'vw';
+      p.style.animationDuration = (8+Math.random()*10)+'s';
+      p.style.animationDelay = (Math.random()*10)+'s';
+      p.style.fontSize = (16+Math.random()*14)+'px';
+      frag.appendChild(p);
+    }
+    document.body.appendChild(frag);
   }
 
-  // ---------- Playful "No" button dodge ----------
+  // ---------- Playful "No" button dodge (works on touch + mouse) ----------
   const noBtn = document.getElementById('noBtn');
   const hint = document.getElementById('hint');
   const row = document.querySelector('.yn-row');
   let dodges = 0;
+  let dodging = false;
   const hints = [
     "hmm, it slipped away 🙈",
     "try again? 😏",
@@ -405,18 +447,24 @@
   ];
   function dodge(){
     const rowRect = row.getBoundingClientRect();
-    const maxX = rowRect.width - noBtn.offsetWidth - 10;
-    const maxY = rowRect.height - noBtn.offsetHeight - 4;
-    const x = Math.max(0, Math.random()*maxX);
-    const y = Math.max(-4, Math.random()*maxY);
+    const maxX = Math.max(0, rowRect.width - noBtn.offsetWidth - 10);
+    const maxY = Math.max(0, rowRect.height - noBtn.offsetHeight - 4);
+    const x = Math.random()*maxX;
+    const y = Math.random()*maxY;
+    noBtn.style.position = 'absolute';
     noBtn.style.left = x+'px';
     noBtn.style.top = y+'px';
     dodges++;
     hint.textContent = hints[Math.min(dodges-1, hints.length-1)];
   }
-  noBtn.addEventListener('mouseenter', dodge);
-  noBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); dodge(); }, {passive:false});
-  noBtn.addEventListener('click', (e)=>{ e.preventDefault(); dodge(); });
+  // Desktop: dodge on hover. Mobile: dodge on first touch (tap doesn't register as click).
+  noBtn.addEventListener('mouseenter', () => { if(!('ontouchstart' in window)) dodge(); });
+  noBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); dodging = true; dodge(); }, {passive:false});
+  noBtn.addEventListener('click', (e)=>{
+    e.preventDefault();
+    if(!dodging) dodge();
+    dodging = false;
+  });
 
   // ---------- Step navigation ----------
   function goToStep(n){
