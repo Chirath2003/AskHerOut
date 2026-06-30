@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Question For You</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Quicksand:wght@400;500;600;700&display=swap');
+
+  :root{
+    --plum: #4a2545;
+    --plum-deep: #2f1830;
+    --rose: #e88ca0;
+    --rose-soft: #f5d5dc;
+    --blush-bg: #fbeef0;
+    --cream: #fff9f6;
+    --gold: #cf9a5e;
+    --ink: #3a2436;
+    --shadow: rgba(74,37,69,0.18);
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  body{
+    min-height:100vh;
+    background: radial-gradient(circle at 20% 15%, #f7d8df 0%, var(--blush-bg) 45%, #f1c9d3 100%);
+    font-family:'Quicksand', sans-serif;
+    color: var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 32px 16px;
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  /* floating petals */
+  .petal{
+    position:fixed;
+    top:-40px;
+    font-size: 22px;
+    opacity:0.55;
+    animation: fall linear infinite;
+    pointer-events:none;
+    z-index:0;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.08));
+  }
+  @keyframes fall{
+    0%{ transform: translateY(-10vh) translateX(0) rotate(0deg); }
+    100%{ transform: translateY(110vh) translateX(40px) rotate(280deg); }
+  }
+
+  .card{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width: 480px;
+    background: var(--cream);
+    border-radius: 28px;
+    box-shadow: 0 30px 60px -20px var(--shadow), 0 0 0 1px rgba(255,255,255,0.5) inset;
+    padding: 44px 36px 38px;
+    text-align:center;
+    transition: transform 0.5s cubic-bezier(.2,.8,.2,1), opacity 0.4s ease;
+  }
+
+  .eyebrow{
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--rose);
+    font-weight:600;
+    margin-bottom: 14px;
+  }
+
+  h1{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:600;
+    font-size: 30px;
+    line-height:1.25;
+    color: var(--plum);
+    margin-bottom: 10px;
+  }
+
+  .sub{
+    font-size:15px;
+    color:#8a6b7b;
+    margin-bottom: 28px;
+    line-height:1.5;
+  }
+
+  /* Step indicator */
+  .steps{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    margin-bottom: 26px;
+  }
+  .steps span{
+    width:7px; height:7px;
+    border-radius:50%;
+    background: var(--rose-soft);
+    transition: all 0.35s ease;
+  }
+  .steps span.active{ background: var(--rose); width:22px; border-radius:5px; }
+  .steps span.done{ background: var(--gold); }
+
+  /* Step 1: ask */
+  .heart-wrap{
+    margin: 6px auto 24px;
+    width: 92px; height:92px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .heart-wrap svg{ width:100%; height:100%; animation: beat 1.6s ease-in-out infinite; }
+  @keyframes beat{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
+
+  .yn-row{
+    display:flex;
+    gap:14px;
+    justify-content:center;
+    margin-top: 8px;
+    position:relative;
+    min-height: 56px;
+  }
+
+  button{ font-family:'Quicksand', sans-serif; cursor:pointer; border:none; }
+
+  .btn-yes{
+    background: linear-gradient(135deg, var(--rose), #d96f8a);
+    color: #fff;
+    font-weight:700;
+    font-size: 16px;
+    padding: 15px 38px;
+    border-radius: 999px;
+    box-shadow: 0 10px 24px -6px rgba(216,90,120,0.55);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    letter-spacing: 0.3px;
+  }
+  .btn-yes:hover{ transform: translateY(-2px) scale(1.03); box-shadow: 0 14px 28px -6px rgba(216,90,120,0.6); }
+  .btn-yes:active{ transform: scale(0.97); }
+
+  .btn-no{
+    background: transparent;
+    color:#a98b97;
+    font-weight:600;
+    font-size: 15px;
+    padding: 15px 30px;
+    border-radius: 999px;
+    border: 1.5px solid #e9d3d8;
+    position:absolute;
+    transition: top 0.18s ease, left 0.18s ease, transform 0.15s ease;
+  }
+
+  .hint{
+    margin-top: 18px;
+    font-size: 12.5px;
+    color:#bb98a4;
+    min-height: 16px;
+    font-style: italic;
+    font-family:'Cormorant Garamond', serif;
+  }
+
+  /* Generic step body */
+  .step{ display:none; }
+  .step.active{ display:block; animation: rise 0.45s ease; }
+  @keyframes rise{ from{ opacity:0; transform: translateY(14px);} to{opacity:1; transform:translateY(0);} }
+
+  /* Time grid */
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 4px 0 22px;
+  }
+  .opt{
+    background: #fff;
+    border: 1.5px solid #f0dde2;
+    border-radius: 14px;
+    padding: 13px 6px;
+    font-size: 14px;
+    font-weight:600;
+    color: var(--plum);
+    transition: all 0.18s ease;
+  }
+  .opt:hover{ border-color: var(--rose); transform: translateY(-2px); }
+  .opt.selected{
+    background: linear-gradient(135deg, var(--rose), #d96f8a);
+    color:#fff;
+    border-color: transparent;
+    box-shadow: 0 8px 18px -6px rgba(216,90,120,0.5);
+  }
+
+  /* Date input */
+  .field-label{
+    text-align:left;
+    font-size: 13px;
+    font-weight:700;
+    color: var(--plum);
+    margin-bottom: 8px;
+    letter-spacing: 0.3px;
+  }
+  input[type="date"]{
+    width:100%;
+    padding: 13px 16px;
+    border-radius: 14px;
+    border: 1.5px solid #f0dde2;
+    font-family:'Quicksand', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    margin-bottom: 22px;
+    background:#fff;
+  }
+  input[type="date"]:focus{ outline:2px solid var(--rose-soft); border-color: var(--rose); }
+
+  /* Choice cards (eat/drink) */
+  .choice-row{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 4px 0 22px;
+  }
+  .choice-card{
+    background:#fff;
+    border: 1.5px solid #f0dde2;
+    border-radius: 18px;
+    padding: 22px 10px 16px;
+    transition: all 0.2s ease;
+  }
+  .choice-card .emoji{ font-size: 34px; display:block; margin-bottom: 8px; }
+  .choice-card .label{ font-weight:700; font-size:15px; color: var(--plum); }
+  .choice-card:hover{ transform: translateY(-3px); border-color: var(--rose); }
+  .choice-card.selected{
+    background: linear-gradient(160deg, #fff, var(--rose-soft));
+    border-color: var(--rose);
+    box-shadow: 0 10px 22px -8px rgba(216,90,120,0.4);
+  }
+
+  .next-btn{
+    width:100%;
+    background: linear-gradient(135deg, var(--plum), var(--plum-deep));
+    color:#fff;
+    font-weight:700;
+    font-size:15px;
+    padding:15px;
+    border-radius: 14px;
+    letter-spacing:0.3px;
+    transition: all 0.2s ease;
+    opacity:0.4;
+    pointer-events:none;
+  }
+  .next-btn.ready{ opacity:1; pointer-events:auto; }
+  .next-btn.ready:hover{ transform: translateY(-2px); box-shadow: 0 12px 22px -8px rgba(47,24,48,0.45); }
+
+  .back-link{
+    display:block;
+    margin-top: 14px;
+    font-size: 13px;
+    color:#b98fa0;
+    font-weight:600;
+    text-decoration: underline;
+    background:none;
+  }
+
+  /* Confirmation */
+  .confirm-icon{ font-size: 48px; margin-bottom: 10px; display:block; }
+  .summary{
+    background: var(--rose-soft);
+    border-radius: 18px;
+    padding: 20px 22px;
+    margin: 18px 0 24px;
+    text-align:left;
+  }
+  .summary-row{
+    display:flex;
+    justify-content:space-between;
+    font-size: 14.5px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.6);
+  }
+  .summary-row:last-child{ border-bottom:none; }
+  .summary-row .k{ color:#8a5c6b; font-weight:600; }
+  .summary-row .v{ color: var(--plum); font-weight:700; }
+
+  .final-msg{
+    font-family:'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--plum);
+    line-height:1.5;
+    margin-top: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .petal, .heart-wrap svg, .card{ animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card" id="card">
+
+  <div class="steps" id="steps">
+    <span class="active" data-s="0"></span>
+    <span data-s="1"></span>
+    <span data-s="2"></span>
+    <span data-s="3"></span>
+  </div>
+
+  <!-- STEP 0: THE ASK -->
+  <div class="step active" data-step="0">
+    <div class="eyebrow">A small question</div>
+    <div class="heart-wrap">
+      <svg viewBox="0 0 100 100" fill="none">
+        <path d="M50 86C50 86 12 62 12 35C12 19 24 10 38 10C45 10 50 14 50 14C50 14 55 10 62 10C76 10 88 19 88 35C88 62 50 86 50 86Z" fill="#e88ca0"/>
+      </svg>
+    </div>
+    <h1>Will you go on a date<br>with me?</h1>
+    <p class="sub">No pressure. Just two people, good food, and time well spent together.</p>
+
+    <div class="yn-row">
+      <button class="btn-yes" onclick="goToStep(1)">Yes, I'd love to</button>
+      <button class="btn-no" id="noBtn">No</button>
+    </div>
+    <div class="hint" id="hint"></div>
+  </div>
+
+  <!-- STEP 1: DATE + TIME -->
+  <div class="step" data-step="1">
+    <div class="eyebrow">Step 1 of 3</div>
+    <h1>When works for you?</h1>
+    <p class="sub">Pick a day, then an hour that feels right.</p>
+
+    <div class="field-label">Date</div>
+    <input type="date" id="dateInput" onchange="checkStep1()">
+
+    <div class="field-label">Time</div>
+    <div class="grid" id="timeGrid"></div>
+
+    <button class="next-btn" id="step1Next" onclick="goToStep(2)">Continue</button>
+  </div>
+
+  <!-- STEP 2: EAT OR DRINKS -->
+  <div class="step" data-step="2">
+    <div class="eyebrow">Step 2 of 3</div>
+    <h1>What sounds good?</h1>
+    <p class="sub">You can pick one, or both if you're feeling it.</p>
+
+    <div class="choice-row">
+      <div class="choice-card" id="optEat" onclick="toggleChoice('optEat')">
+        <span class="emoji">🍽️</span>
+        <span class="label">Something to eat</span>
+      </div>
+      <div class="choice-card" id="optDrinks" onclick="toggleChoice('optDrinks')">
+        <span class="emoji">🍷</span>
+        <span class="label">Drinks</span>
+      </div>
+    </div>
+
+    <button class="next-btn" id="step2Next" onclick="goToStep(3)">Continue</button>
+    <button class="back-link" onclick="goToStep(1)">← back</button>
+  </div>
+
+  <!-- STEP 3: CONFIRM -->
+  <div class="step" data-step="3">
+    <span class="confirm-icon">💌</span>
+    <h1>It's a date.</h1>
+    <p class="sub">Here's what we've got — let me know if anything needs to change.</p>
+
+    <div class="summary">
+      <div class="summary-row"><span class="k">Date</span><span class="v" id="sumDate">—</span></div>
+      <div class="summary-row"><span class="k">Time</span><span class="v" id="sumTime">—</span></div>
+      <div class="summary-row"><span class="k">Plan</span><span class="v" id="sumChoice">—</span></div>
+    </div>
+
+    <button class="next-btn ready" onclick="finalConfirm()">Confirm our date 💕</button>
+    <button class="back-link" onclick="goToStep(2)">← back</button>
+  </div>
+
+</div>
+
+<script>
+  // ---------- Floating petals background ----------
+  const petalEmojis = ['🌸','💗','🌹'];
+  for(let i=0;i<14;i++){
+    const p = document.createElement('div');
+    p.className='petal';
+    p.textContent = petalEmojis[Math.floor(Math.random()*petalEmojis.length)];
+    p.style.left = Math.random()*100+'vw';
+    p.style.animationDuration = (8+Math.random()*10)+'s';
+    p.style.animationDelay = (Math.random()*10)+'s';
+    p.style.fontSize = (16+Math.random()*14)+'px';
+    document.body.appendChild(p);
+  }
+
+  // ---------- Playful "No" button dodge ----------
+  const noBtn = document.getElementById('noBtn');
+  const hint = document.getElementById('hint');
+  const row = document.querySelector('.yn-row');
+  let dodges = 0;
+  const hints = [
+    "hmm, it slipped away 🙈",
+    "try again? 😏",
+    "it really doesn't want to be clicked",
+    "okay this is just shy now",
+    "maybe just say yes? 💗"
+  ];
+  function dodge(){
+    const rowRect = row.getBoundingClientRect();
+    const maxX = rowRect.width - noBtn.offsetWidth - 10;
+    const maxY = rowRect.height - noBtn.offsetHeight - 4;
+    const x = Math.max(0, Math.random()*maxX);
+    const y = Math.max(-4, Math.random()*maxY);
+    noBtn.style.left = x+'px';
+    noBtn.style.top = y+'px';
+    dodges++;
+    hint.textContent = hints[Math.min(dodges-1, hints.length-1)];
+  }
+  noBtn.addEventListener('mouseenter', dodge);
+  noBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); dodge(); }, {passive:false});
+  noBtn.addEventListener('click', (e)=>{ e.preventDefault(); dodge(); });
+
+  // ---------- Step navigation ----------
+  function goToStep(n){
+    document.querySelectorAll('.step').forEach(s=>{
+      s.classList.toggle('active', s.dataset.step === String(n));
+    });
+    document.querySelectorAll('#steps span').forEach(dot=>{
+      const s = Number(dot.dataset.s);
+      dot.classList.remove('active','done');
+      if(s < n) dot.classList.add('done');
+      if(s === n) dot.classList.add('active');
+    });
+    if(n===3) buildSummary();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  // ---------- Time grid (9am - 8pm hourly) ----------
+  const timeGrid = document.getElementById('timeGrid');
+  let selectedTime = null;
+  for(let h=9; h<=20; h++){
+    const label = h <= 12 ? `${h}:00 AM`.replace('12:00 AM','12:00 PM') : `${h-12}:00 PM`;
+    const display = h === 12 ? '12:00 PM' : (h < 12 ? `${h}:00 AM` : `${h-12}:00 PM`);
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = display;
+    btn.onclick = () => {
+      document.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedTime = display;
+      checkStep1();
+    };
+    timeGrid.appendChild(btn);
+  }
+
+  const dateInput = document.getElementById('dateInput');
+  const today = new Date().toISOString().split('T')[0];
+  dateInput.setAttribute('min', today);
+
+  function checkStep1(){
+    const ready = dateInput.value && selectedTime;
+    document.getElementById('step1Next').classList.toggle('ready', !!ready);
+  }
+
+  // ---------- Eat / Drinks choice ----------
+  let choices = new Set();
+  function toggleChoice(id){
+    const el = document.getElementById(id);
+    el.classList.toggle('selected');
+    if(choices.has(id)) choices.delete(id); else choices.add(id);
+    document.getElementById('step2Next').classList.toggle('ready', choices.size > 0);
+  }
+
+  // ---------- Summary ----------
+  function buildSummary(){
+    const d = new Date(dateInput.value + 'T00:00:00');
+    const dateStr = d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+    document.getElementById('sumDate').textContent = dateStr;
+    document.getElementById('sumTime').textContent = selectedTime || '—';
+
+    let plan = [];
+    if(choices.has('optEat')) plan.push('Eat');
+    if(choices.has('optDrinks')) plan.push('Drinks');
+    document.getElementById('sumChoice').textContent = plan.length ? plan.join(' & ') : '—';
+  }
+
+  function finalConfirm(){
+    const card = document.getElementById('card');
+    card.innerHTML = `
+      <span class="confirm-icon">🥂</span>
+      <div class="eyebrow">Confirmed</div>
+      <h1>I can't wait.</h1>
+      <p class="final-msg">${document.getElementById('sumDate').textContent}, at ${document.getElementById('sumTime').textContent}.<br>See you soon. 💕</p>
+    `;
+  }
+</script>
+
+</body>
+</html>
