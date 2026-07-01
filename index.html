@@ -4,10 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>A Question For You</title>
+
+<!-- Google Maps API (replace YOUR_API_KEY with your actual key) -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDwlXWdD4p7ehsF6syl86Fm0bxg-35ogm4&libraries=places&callback=initMap" async defer loading="async">
+</script>
+
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Quicksand:wght@400;500;600;700&display=swap');
 
-  :root{
+  :root {
     --plum: #4a2545;
     --plum-deep: #2f1830;
     --rose: #e88ca0;
@@ -16,328 +21,535 @@
     --cream: #fff9f6;
     --gold: #cf9a5e;
     --ink: #3a2436;
-    --shadow: rgba(74,37,69,0.18);
+    --shadow: rgba(74, 37, 69, 0.18);
+    --map-height: 180px;
   }
 
-  *{ box-sizing:border-box; margin:0; padding:0; }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-  body{
-    min-height:100vh;
+  body {
+    min-height: 100vh;
     background: radial-gradient(circle at 20% 15%, #f7d8df 0%, var(--blush-bg) 45%, #f1c9d3 100%);
-    font-family:'Quicksand', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     color: var(--ink);
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 32px 16px;
-    overflow-x:hidden;
-    position:relative;
+    overflow-x: hidden;
+    position: relative;
   }
 
   /* floating petals */
-  .petal{
-    position:fixed;
-    top:-40px;
+  .petal {
+    position: fixed;
+    top: -40px;
     font-size: 22px;
-    opacity:0.55;
+    opacity: 0.55;
     animation: fall linear infinite;
-    pointer-events:none;
-    z-index:0;
-    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.08));
+    pointer-events: none;
+    z-index: 0;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.08));
   }
-  @keyframes fall{
-    0%{ transform: translateY(-10vh) translateX(0) rotate(0deg); }
-    100%{ transform: translateY(110vh) translateX(40px) rotate(280deg); }
+  @keyframes fall {
+    0% { transform: translateY(-10vh) translateX(0) rotate(0deg); }
+    100% { transform: translateY(110vh) translateX(40px) rotate(280deg); }
   }
 
-  .card{
-    position:relative;
-    z-index:1;
-    width:100%;
+  .card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
     max-width: 480px;
     background: var(--cream);
     border-radius: 28px;
-    box-shadow: 0 30px 60px -20px var(--shadow), 0 0 0 1px rgba(255,255,255,0.5) inset;
+    box-shadow: 0 30px 60px -20px var(--shadow), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
     padding: 44px 36px 38px;
-    text-align:center;
-    transition: transform 0.5s cubic-bezier(.2,.8,.2,1), opacity 0.4s ease;
+    text-align: center;
+    transition: transform 0.5s cubic-bezier(.2, .8, .2, 1), opacity 0.4s ease;
   }
 
-  .eyebrow{
+  .eyebrow {
     font-size: 12px;
     letter-spacing: 3px;
     text-transform: uppercase;
     color: var(--rose);
-    font-weight:600;
+    font-weight: 600;
     margin-bottom: 14px;
   }
 
-  h1{
-    font-family:'Cormorant Garamond', serif;
-    font-weight:600;
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
     font-size: 30px;
-    line-height:1.25;
+    line-height: 1.25;
     color: var(--plum);
     margin-bottom: 10px;
   }
 
-  .sub{
-    font-size:15px;
-    color:#8a6b7b;
+  .sub {
+    font-size: 15px;
+    color: #8a6b7b;
     margin-bottom: 28px;
-    line-height:1.5;
+    line-height: 1.5;
   }
 
-  /* Step indicator */
-  .steps{
-    display:flex;
-    justify-content:center;
-    gap:8px;
+  .steps {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
     margin-bottom: 26px;
   }
-  .steps span{
-    width:7px; height:7px;
-    border-radius:50%;
+  .steps span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
     background: var(--rose-soft);
     transition: all 0.35s ease;
   }
-  .steps span.active{ background: var(--rose); width:22px; border-radius:5px; }
-  .steps span.done{ background: var(--gold); }
-
-  /* Step 1: ask */
-  .heart-wrap{
-    margin: 6px auto 24px;
-    width: 92px; height:92px;
-    display:flex; align-items:center; justify-content:center;
+  .steps span.active {
+    background: var(--rose);
+    width: 22px;
+    border-radius: 5px;
   }
-  .heart-wrap svg{ width:100%; height:100%; animation: beat 1.6s ease-in-out infinite; }
-  @keyframes beat{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
+  .steps span.done {
+    background: var(--gold);
+  }
 
-  .yn-row{
-    display:flex;
-    gap:14px;
-    justify-content:center;
+  /* Step 0: ask */
+  .heart-wrap {
+    margin: 6px auto 24px;
+    width: 92px;
+    height: 92px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .heart-wrap svg {
+    width: 100%;
+    height: 100%;
+    animation: beat 1.6s ease-in-out infinite;
+  }
+  @keyframes beat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+
+  .yn-row {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
     margin-top: 8px;
-    position:relative;
+    position: relative;
     min-height: 56px;
   }
 
-  button{ font-family:'Quicksand', sans-serif; cursor:pointer; border:none; }
+  button {
+    font-family: 'Quicksand', sans-serif;
+    cursor: pointer;
+    border: none;
+  }
 
-  .btn-yes{
+  .btn-yes {
     background: linear-gradient(135deg, var(--rose), #d96f8a);
     color: #fff;
-    font-weight:700;
+    font-weight: 700;
     font-size: 16px;
     padding: 15px 38px;
     border-radius: 999px;
-    box-shadow: 0 10px 24px -6px rgba(216,90,120,0.55);
+    box-shadow: 0 10px 24px -6px rgba(216, 90, 120, 0.55);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     letter-spacing: 0.3px;
   }
-  .btn-yes:hover{ transform: translateY(-2px) scale(1.03); box-shadow: 0 14px 28px -6px rgba(216,90,120,0.6); }
-  .btn-yes:active{ transform: scale(0.97); }
+  .btn-yes:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 14px 28px -6px rgba(216, 90, 120, 0.6);
+  }
+  .btn-yes:active {
+    transform: scale(0.97);
+  }
 
-  .btn-no{
+  .btn-no {
     background: transparent;
-    color:#a98b97;
-    font-weight:600;
+    color: #a98b97;
+    font-weight: 600;
     font-size: 15px;
     padding: 15px 30px;
     border-radius: 999px;
     border: 1.5px solid #e9d3d8;
-    position:absolute;
-    top:0;
+    position: absolute;
     transition: top 0.18s ease, left 0.18s ease, transform 0.15s ease;
   }
 
-  .hint{
+  .hint {
     margin-top: 18px;
     font-size: 12.5px;
-    color:#bb98a4;
+    color: #bb98a4;
     min-height: 16px;
     font-style: italic;
-    font-family:'Cormorant Garamond', serif;
+    font-family: 'Cormorant Garamond', serif;
   }
 
-  /* Generic step body */
-  .step{ display:none; }
-  .step.active{ display:block; animation: rise 0.45s ease; }
-  @keyframes rise{ from{ opacity:0; transform: translateY(14px);} to{opacity:1; transform:translateY(0);} }
+  .step {
+    display: none;
+  }
+  .step.active {
+    display: block;
+    animation: rise 0.45s ease;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
-  /* Time grid */
-  .grid{
-    display:grid;
+  .grid {
+    display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
     margin: 4px 0 22px;
   }
-  .opt{
+  .opt {
     background: #fff;
     border: 1.5px solid #f0dde2;
     border-radius: 14px;
     padding: 13px 6px;
     font-size: 14px;
-    font-weight:600;
+    font-weight: 600;
     color: var(--plum);
     transition: all 0.18s ease;
   }
-  .opt:hover{ border-color: var(--rose); transform: translateY(-2px); }
-  .opt.selected{
+  .opt:hover {
+    border-color: var(--rose);
+    transform: translateY(-2px);
+  }
+  .opt.selected {
     background: linear-gradient(135deg, var(--rose), #d96f8a);
-    color:#fff;
+    color: #fff;
     border-color: transparent;
-    box-shadow: 0 8px 18px -6px rgba(216,90,120,0.5);
+    box-shadow: 0 8px 18px -6px rgba(216, 90, 120, 0.5);
   }
 
-  /* Date input */
-  .field-label{
-    text-align:left;
+  .field-label {
+    text-align: left;
     font-size: 13px;
-    font-weight:700;
+    font-weight: 700;
     color: var(--plum);
     margin-bottom: 8px;
     letter-spacing: 0.3px;
   }
-  input[type="date"]{
-    width:100%;
+  input[type="date"] {
+    width: 100%;
     padding: 13px 16px;
     border-radius: 14px;
     border: 1.5px solid #f0dde2;
-    font-family:'Quicksand', sans-serif;
+    font-family: 'Quicksand', sans-serif;
     font-size: 15px;
     color: var(--ink);
     margin-bottom: 22px;
-    background:#fff;
+    background: #fff;
   }
-  input[type="date"]:focus{ outline:2px solid var(--rose-soft); border-color: var(--rose); }
+  input[type="date"]:focus {
+    outline: 2px solid var(--rose-soft);
+    border-color: var(--rose);
+  }
 
-  /* Choice cards (eat/drink) */
-  .choice-row{
-    display:grid;
+  .choice-row {
+    display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
     margin: 4px 0 22px;
   }
-  .choice-card{
-    background:#fff;
+  .choice-card {
+    background: #fff;
     border: 1.5px solid #f0dde2;
     border-radius: 18px;
     padding: 22px 10px 16px;
     transition: all 0.2s ease;
+    cursor: pointer;
   }
-  .choice-card .emoji{ font-size: 34px; display:block; margin-bottom: 8px; }
-  .choice-card .label{ font-weight:700; font-size:15px; color: var(--plum); }
-  .choice-card:hover{ transform: translateY(-3px); border-color: var(--rose); }
-  .choice-card.selected{
+  .choice-card .emoji {
+    font-size: 34px;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .choice-card .label {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--plum);
+  }
+  .choice-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--rose);
+  }
+  .choice-card.selected {
     background: linear-gradient(160deg, #fff, var(--rose-soft));
     border-color: var(--rose);
-    box-shadow: 0 10px 22px -8px rgba(216,90,120,0.4);
+    box-shadow: 0 10px 22px -8px rgba(216, 90, 120, 0.4);
   }
 
-  .next-btn{
-    width:100%;
-    background: linear-gradient(135deg, var(--plum), var(--plum-deep));
-    color:#fff;
-    font-weight:700;
-    font-size:15px;
-    padding:15px;
+  .location-search-wrap {
+    position: relative;
+    margin-bottom: 14px;
+  }
+  .location-search-wrap input,
+  .location-search-wrap gmp-place-autocomplete {
+    width: 100%;
+    padding: 14px 16px 14px 46px;
     border-radius: 14px;
-    letter-spacing:0.3px;
-    transition: all 0.2s ease;
-    opacity:0.4;
-    pointer-events:none;
+    border: 1.5px solid #f0dde2;
+    font-family: 'Quicksand', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%238a6b7b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 16px center no-repeat;
+    background-size: 18px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
   }
-  .next-btn.ready{ opacity:1; pointer-events:auto; }
-  .next-btn.ready:hover{ transform: translateY(-2px); box-shadow: 0 12px 22px -8px rgba(47,24,48,0.45); }
+  .location-search-wrap input:focus,
+  .location-search-wrap gmp-place-autocomplete:focus-within {
+    outline: 2px solid var(--rose-soft);
+    border-color: var(--rose);
+  }
 
-  .back-link{
-    display:block;
+  .map-container {
+    border-radius: 16px;
+    overflow: hidden;
+    height: var(--map-height);
+    background: #e8dce0;
+    margin: 6px 0 16px;
+    border: 1.5px solid #f0dde2;
+    position: relative;
+  }
+  .map-container #map {
+    width: 100%;
+    height: 100%;
+  }
+  .map-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #a98b97;
+    font-size: 14px;
+    font-weight: 500;
+    background: #f5edef;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .map-placeholder span {
+    font-size: 32px;
+  }
+
+  .selected-place-info {
+    background: var(--rose-soft);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin: 6px 0 18px;
+    text-align: left;
+    font-size: 14px;
+    display: none;
+  }
+  .selected-place-info.show {
+    display: block;
+  }
+  .selected-place-info .place-name {
+    font-weight: 700;
+    color: var(--plum);
+  }
+  .selected-place-info .place-address {
+    color: #6a4d5a;
+    font-size: 13px;
+    margin-top: 2px;
+  }
+
+  .next-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--plum), var(--plum-deep));
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 15px;
+    border-radius: 14px;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .next-btn.ready {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .next-btn.ready:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 22px -8px rgba(47, 24, 48, 0.45);
+  }
+
+  .back-link {
+    display: block;
     margin-top: 14px;
     font-size: 13px;
-    color:#b98fa0;
-    font-weight:600;
+    color: #b98fa0;
+    font-weight: 600;
     text-decoration: underline;
-    background:none;
+    background: none;
+    cursor: pointer;
   }
 
-  /* Confirmation */
-  .confirm-icon{ font-size: 48px; margin-bottom: 10px; display:block; }
-  .summary{
+  .confirm-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .summary {
     background: var(--rose-soft);
     border-radius: 18px;
     padding: 20px 22px;
     margin: 18px 0 24px;
-    text-align:left;
+    text-align: left;
   }
-  .summary-row{
-    display:flex;
-    justify-content:space-between;
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
     font-size: 14.5px;
     padding: 7px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.6);
   }
-  .summary-row:last-child{ border-bottom:none; }
-  .summary-row .k{ color:#8a5c6b; font-weight:600; }
-  .summary-row .v{ color: var(--plum); font-weight:700; }
+  .summary-row:last-child {
+    border-bottom: none;
+  }
+  .summary-row .k {
+    color: #8a5c6b;
+    font-weight: 600;
+  }
+  .summary-row .v {
+    color: var(--plum);
+    font-weight: 700;
+  }
 
-  .final-msg{
-    font-family:'Cormorant Garamond', serif;
+  .final-msg {
+    font-family: 'Cormorant Garamond', serif;
     font-style: italic;
     font-size: 18px;
     color: var(--plum);
-    line-height:1.5;
+    line-height: 1.5;
     margin-top: 4px;
   }
 
-  @media (prefers-reduced-motion: reduce){
-    .petal, .heart-wrap svg, .card{ animation: none !important; }
+  .action-row {
+    display: flex;
+    gap: 12px;
+    margin: 6px 0 14px;
+  }
+  .action-row .btn-secondary {
+    flex: 1;
+    background: #fff;
+    border: 1.5px solid #f0dde2;
+    border-radius: 14px;
+    padding: 12px 8px;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--plum);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .action-row .btn-secondary:hover {
+    border-color: var(--rose);
+    background: var(--rose-soft);
+    transform: translateY(-2px);
+  }
+  .action-row .btn-secondary .icon {
+    font-size: 18px;
   }
 
-  /* ---------- Mobile tuning ---------- */
-  @media (max-width: 480px){
-    body{ padding: 18px 12px; align-items:flex-start; }
-    .card{ padding: 32px 22px 28px; border-radius: 22px; max-width: 100%; }
-    h1{ font-size: 24px; }
-    .sub{ font-size: 14px; margin-bottom: 22px; }
-    .heart-wrap{ width: 72px; height:72px; margin-bottom: 18px; }
-
-    .yn-row{ flex-direction: column; align-items:center; min-height: 150px; padding-top: 6px; }
-    .btn-yes{ width: 100%; padding: 15px 20px; }
-    .btn-no{ padding: 13px 24px; font-size: 14px; }
-
-    .grid{ grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .opt{ padding: 12px 4px; font-size: 13px; }
-
-    .choice-row{ grid-template-columns: 1fr; gap: 10px; }
-    .choice-card{ display:flex; align-items:center; gap: 12px; padding: 14px 16px; text-align:left; }
-    .choice-card .emoji{ margin-bottom:0; font-size: 26px; }
-
-    .summary{ padding: 16px 16px; }
-    .summary-row{ font-size: 13.5px; }
-
-    .petal{ display:none; }
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--plum-deep);
+    color: #fff;
+    padding: 14px 28px;
+    border-radius: 16px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.35);
+    z-index: 999;
+    opacity: 0;
+    transition: all 0.45s cubic-bezier(.2, .9, .3, 1);
+    pointer-events: none;
+    max-width: 90%;
+    text-align: center;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+  .toast .toast-emoji {
+    margin-right: 8px;
   }
 
-  /* small phones */
-  @media (max-width: 360px){
-    h1{ font-size: 21px; }
+  .celebration {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+    overflow: hidden;
+  }
+  .celebration .confetti {
+    position: absolute;
+    font-size: 26px;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    0% { transform: translateY(-10vh) rotate(0deg) scale(0.6); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg) scale(1); opacity: 0; }
   }
 
-  /* Reduce paint cost */
-  .petal{ will-change: transform; }
-  .card{ will-change: transform, opacity; }
+  @media (prefers-reduced-motion: reduce) {
+    .petal, .heart-wrap svg, .card, .celebration .confetti { animation: none !important; }
+  }
+
+  @media (max-width: 420px) {
+    .card { padding: 32px 18px 28px; }
+    h1 { font-size: 24px; }
+    .action-row { flex-direction: column; }
+    .yn-row { flex-wrap: wrap; }
+    .btn-no { position: relative !important; top: auto !important; left: auto !important; width: 100%; }
+    .yn-row { min-height: auto; flex-direction: column; align-items: center; }
+    .btn-yes { width: 100%; justify-content: center; }
+    .btn-no { width: 100%; position: relative !important; top: auto !important; left: auto !important; transform: none !important; }
+  }
 </style>
 </head>
 <body>
 
+<!-- Floating petals -->
+<div id="petals"></div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"><span class="toast-emoji">💕</span> <span id="toastMsg">Date confirmed!</span></div>
+
+<!-- Main card -->
 <div class="card" id="card">
 
+  <!-- Step indicators -->
   <div class="steps" id="steps">
     <span class="active" data-s="0"></span>
     <span data-s="1"></span>
     <span data-s="2"></span>
     <span data-s="3"></span>
+    <span data-s="4"></span>
   </div>
 
   <!-- STEP 0: THE ASK -->
@@ -348,24 +560,24 @@
         <path d="M50 86C50 86 12 62 12 35C12 19 24 10 38 10C45 10 50 14 50 14C50 14 55 10 62 10C76 10 88 19 88 35C88 62 50 86 50 86Z" fill="#e88ca0"/>
       </svg>
     </div>
-    <h1>Will you go on a date<br>with me?</h1>
+    <h1>Will you go on a date<br />with me?</h1>
     <p class="sub">No pressure. Just two people, good food, and time well spent together.</p>
 
-    <div class="yn-row" id="ynRow">
+    <div class="yn-row">
       <button class="btn-yes" onclick="goToStep(1)">Yes, I'd love to</button>
-      <button class="btn-no" id="noBtn" style="position:static; margin-left:4px;">No</button>
+      <button class="btn-no" id="noBtn">No</button>
     </div>
     <div class="hint" id="hint"></div>
   </div>
 
   <!-- STEP 1: DATE + TIME -->
   <div class="step" data-step="1">
-    <div class="eyebrow">Step 1 of 3</div>
+    <div class="eyebrow">Step 1 of 4</div>
     <h1>When works for you?</h1>
     <p class="sub">Pick a day, then an hour that feels right.</p>
 
     <div class="field-label">Date</div>
-    <input type="date" id="dateInput" onchange="checkStep1()">
+    <input type="date" id="dateInput" onchange="checkStep1()" />
 
     <div class="field-label">Time</div>
     <div class="grid" id="timeGrid"></div>
@@ -375,7 +587,7 @@
 
   <!-- STEP 2: EAT OR DRINKS -->
   <div class="step" data-step="2">
-    <div class="eyebrow">Step 2 of 3</div>
+    <div class="eyebrow">Step 2 of 4</div>
     <h1>What sounds good?</h1>
     <p class="sub">You can pick one, or both if you're feeling it.</p>
 
@@ -394,8 +606,29 @@
     <button class="back-link" onclick="goToStep(1)">← back</button>
   </div>
 
-  <!-- STEP 3: CONFIRM -->
+  <!-- STEP 3: LOCATION (NEW with PlaceAutocompleteElement) -->
   <div class="step" data-step="3">
+    <div class="eyebrow">Step 3 of 4</div>
+    <h1>Where shall we go?</h1>
+    <p class="sub">Search for a place — café, restaurant, park, or anywhere you like.</p>
+
+    <div class="location-search-wrap" id="placeInputContainer"></div>
+
+    <div class="map-container">
+      <div id="map"><div class="map-placeholder" id="mapPlaceholder"><span>🗺️</span> Search above to see the map</div></div>
+    </div>
+
+    <div class="selected-place-info" id="placeInfo">
+      <div class="place-name" id="placeName">—</div>
+      <div class="place-address" id="placeAddress">—</div>
+    </div>
+
+    <button class="next-btn" id="step3Next" onclick="goToStep(4)">Continue</button>
+    <button class="back-link" onclick="goToStep(2)">← back</button>
+  </div>
+
+  <!-- STEP 4: CONFIRM -->
+  <div class="step" data-step="4">
     <span class="confirm-icon">💌</span>
     <h1>It's a date.</h1>
     <p class="sub">Here's what we've got — let me know if anything needs to change.</p>
@@ -404,40 +637,55 @@
       <div class="summary-row"><span class="k">Date</span><span class="v" id="sumDate">—</span></div>
       <div class="summary-row"><span class="k">Time</span><span class="v" id="sumTime">—</span></div>
       <div class="summary-row"><span class="k">Plan</span><span class="v" id="sumChoice">—</span></div>
+      <div class="summary-row"><span class="k">Place</span><span class="v" id="sumPlace">—</span></div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-secondary" id="btnCalendar" onclick="addToCalendar()">
+        <span class="icon">📅</span> Calendar
+      </button>
+      <button class="btn-secondary" id="btnNotify" onclick="sendNotification()">
+        <span class="icon">🔔</span> Notify Me
+      </button>
     </div>
 
     <button class="next-btn ready" onclick="finalConfirm()">Confirm our date 💕</button>
-    <button class="back-link" onclick="goToStep(2)">← back</button>
+    <button class="back-link" onclick="goToStep(3)">← back</button>
   </div>
 
 </div>
 
 <script>
-  // ---------- Floating petals background (skip on small/low-power screens) ----------
-  const isMobile = window.matchMedia('(max-width: 480px)').matches;
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(!isMobile && !prefersReducedMotion){
-    const petalEmojis = ['🌸','💗','🌹'];
-    const frag = document.createDocumentFragment();
-    for(let i=0;i<10;i++){
-      const p = document.createElement('div');
-      p.className='petal';
-      p.textContent = petalEmojis[Math.floor(Math.random()*petalEmojis.length)];
-      p.style.left = Math.random()*100+'vw';
-      p.style.animationDuration = (8+Math.random()*10)+'s';
-      p.style.animationDelay = (Math.random()*10)+'s';
-      p.style.fontSize = (16+Math.random()*14)+'px';
-      frag.appendChild(p);
-    }
-    document.body.appendChild(frag);
-  }
+  // ============================================================
+  //  CONFIG: Google Maps API key — replace with your own key
+  // ============================================================
+  const GOOGLE_MAPS_API_KEY = 'AIzaSyDwlXWdD4p7ehsF6syl86Fm0bxg-35ogm4'; // <-- set your key here
 
-  // ---------- Playful "No" button dodge (works on touch + mouse) ----------
+  // ============================================================
+  //  FLOATING PETALS
+  // ============================================================
+  (function createPetals() {
+    const emojis = ['🌸', '💗', '🌹'];
+    const container = document.getElementById('petals');
+    for (let i = 0; i < 14; i++) {
+      const p = document.createElement('div');
+      p.className = 'petal';
+      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.animationDuration = (8 + Math.random() * 10) + 's';
+      p.style.animationDelay = (Math.random() * 10) + 's';
+      p.style.fontSize = (16 + Math.random() * 14) + 'px';
+      container.appendChild(p);
+    }
+  })();
+
+  // ============================================================
+  //  PLAYFUL "NO" BUTTON
+  // ============================================================
   const noBtn = document.getElementById('noBtn');
   const hint = document.getElementById('hint');
   const row = document.querySelector('.yn-row');
   let dodges = 0;
-  let dodging = false;
   const hints = [
     "hmm, it slipped away 🙈",
     "try again? 😏",
@@ -445,53 +693,57 @@
     "okay this is just shy now",
     "maybe just say yes? 💗"
   ];
-  function dodge(){
-    const rowRect = row.getBoundingClientRect();
-    const maxX = Math.max(0, rowRect.width - noBtn.offsetWidth - 10);
-    const maxY = Math.max(0, rowRect.height - noBtn.offsetHeight - 4);
-    const x = Math.random()*maxX;
-    const y = Math.random()*maxY;
-    noBtn.style.position = 'absolute';
-    noBtn.style.left = x+'px';
-    noBtn.style.top = y+'px';
-    dodges++;
-    hint.textContent = hints[Math.min(dodges-1, hints.length-1)];
-  }
-  // Desktop: dodge on hover. Mobile: dodge on first touch (tap doesn't register as click).
-  noBtn.addEventListener('mouseenter', () => { if(!('ontouchstart' in window)) dodge(); });
-  noBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); dodging = true; dodge(); }, {passive:false});
-  noBtn.addEventListener('click', (e)=>{
-    e.preventDefault();
-    if(!dodging) dodge();
-    dodging = false;
-  });
 
-  // ---------- Step navigation ----------
-  function goToStep(n){
-    document.querySelectorAll('.step').forEach(s=>{
+  function dodge(e) {
+    if (e) e.preventDefault();
+    const rowRect = row.getBoundingClientRect();
+    const maxX = rowRect.width - noBtn.offsetWidth - 10;
+    const maxY = rowRect.height - noBtn.offsetHeight - 4;
+    const x = Math.max(0, Math.random() * maxX);
+    const y = Math.max(-4, Math.random() * maxY);
+    noBtn.style.left = x + 'px';
+    noBtn.style.top = y + 'px';
+    dodges++;
+    hint.textContent = hints[Math.min(dodges - 1, hints.length - 1)];
+  }
+  noBtn.addEventListener('mouseenter', dodge);
+  noBtn.addEventListener('touchstart', (e) => { dodge(e); }, { passive: false });
+  noBtn.addEventListener('click', (e) => { dodge(e); });
+
+  // ============================================================
+  //  STEP NAVIGATION
+  // ============================================================
+  function goToStep(n) {
+    document.querySelectorAll('.step').forEach(s => {
       s.classList.toggle('active', s.dataset.step === String(n));
     });
-    document.querySelectorAll('#steps span').forEach(dot=>{
+    document.querySelectorAll('#steps span').forEach(dot => {
       const s = Number(dot.dataset.s);
-      dot.classList.remove('active','done');
-      if(s < n) dot.classList.add('done');
-      if(s === n) dot.classList.add('active');
+      dot.classList.remove('active', 'done');
+      if (s < n) dot.classList.add('done');
+      if (s === n) dot.classList.add('active');
     });
-    if(n===3) buildSummary();
-    window.scrollTo({top:0, behavior:'smooth'});
+    if (n === 4) buildSummary();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // re-trigger map resize if we're on step 3
+    if (n === 3 && window.mapInstance) {
+      setTimeout(() => google.maps.event.trigger(mapInstance, 'resize'), 200);
+    }
   }
 
-  // ---------- Time grid (9am - 8pm hourly) ----------
+  // ============================================================
+  //  STEP 1: DATE + TIME
+  // ============================================================
   const timeGrid = document.getElementById('timeGrid');
   let selectedTime = null;
-  for(let h=9; h<=20; h++){
-    const label = h <= 12 ? `${h}:00 AM`.replace('12:00 AM','12:00 PM') : `${h-12}:00 PM`;
-    const display = h === 12 ? '12:00 PM' : (h < 12 ? `${h}:00 AM` : `${h-12}:00 PM`);
+
+  for (let h = 9; h <= 20; h++) {
+    const display = h === 12 ? '12:00 PM' : (h < 12 ? h + ':00 AM' : (h - 12) + ':00 PM');
     const btn = document.createElement('button');
     btn.className = 'opt';
     btn.textContent = display;
     btn.onclick = () => {
-      document.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected'));
+      document.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
       btn.classList.add('selected');
       selectedTime = display;
       checkStep1();
@@ -502,43 +754,428 @@
   const dateInput = document.getElementById('dateInput');
   const today = new Date().toISOString().split('T')[0];
   dateInput.setAttribute('min', today);
+  // Do NOT pre-fill tomorrow's date – let user pick manually
 
-  function checkStep1(){
+  function checkStep1() {
     const ready = dateInput.value && selectedTime;
     document.getElementById('step1Next').classList.toggle('ready', !!ready);
   }
 
-  // ---------- Eat / Drinks choice ----------
+  // ============================================================
+  //  STEP 2: EAT / DRINKS
+  // ============================================================
   let choices = new Set();
-  function toggleChoice(id){
+
+  function toggleChoice(id) {
     const el = document.getElementById(id);
     el.classList.toggle('selected');
-    if(choices.has(id)) choices.delete(id); else choices.add(id);
+    if (choices.has(id)) choices.delete(id);
+    else choices.add(id);
     document.getElementById('step2Next').classList.toggle('ready', choices.size > 0);
   }
 
-  // ---------- Summary ----------
-  function buildSummary(){
+  // ============================================================
+  //  STEP 3: LOCATION (Google Maps with new PlaceAutocompleteElement)
+  // ============================================================
+  let mapInstance = null;
+  let markerInstance = null;
+  let selectedPlace = null; // { name, address, lat, lng }
+
+  // Called by Google Maps API callback
+  function initMap() {
+    // If no API key, show a message and use fallback
+    if (GOOGLE_MAPS_API_KEY === 'YOUR_API_KEY' || !GOOGLE_MAPS_API_KEY) {
+      document.querySelector('.map-container').innerHTML = `
+        <div class="map-placeholder" style="height:100%;display:flex;flex-direction:column;gap:4px;">
+          <span>🗺️</span>
+          <span style="font-size:13px;color:#a98b97;">Add your Google Maps API key to enable maps</span>
+          <span style="font-size:11px;color:#c9b0b8;">(set GOOGLE_MAPS_API_KEY in the script)</span>
+        </div>
+      `;
+      return;
+    }
+
+    const mapContainer = document.getElementById('map');
+    const placeholder = document.getElementById('mapPlaceholder');
+    if (placeholder) placeholder.style.display = 'none';
+
+    // Default center (New York)
+    const defaultCenter = { lat: 40.7128, lng: -74.0060 };
+
+    mapInstance = new google.maps.Map(mapContainer, {
+      center: defaultCenter,
+      zoom: 14,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: true,
+      styles: [{
+        featureType: 'poi',
+        elementType: 'labels',
+        stylers: [{ visibility: 'off' }]
+      }],
+    });
+
+    // ======= NEW: PlaceAutocompleteElement =======
+    const container = document.getElementById('placeInputContainer');
+    const autocomplete = new google.maps.places.PlaceAutocompleteElement({
+      types: ['establishment', 'geocode'],
+    });
+
+    // Style it to match the old input
+    autocomplete.style.width = '100%';
+    autocomplete.style.padding = '14px 16px 14px 46px';
+    autocomplete.style.borderRadius = '14px';
+    autocomplete.style.border = '1.5px solid #f0dde2';
+    autocomplete.style.fontFamily = "'Quicksand', sans-serif";
+    autocomplete.style.fontSize = '15px';
+    autocomplete.style.color = '#3a2436';
+    autocomplete.style.background = '#fff url(\"data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'18\' height=\'18\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238a6b7b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Ccircle cx=\'11\' cy=\'11\' r=\'8\'/%3E%3Cline x1=\'21\' y1=\'21\' x2=\'16.65\' y2=\'16.65\'/%3E%3C/svg%3E\") 16px center no-repeat';
+    autocomplete.style.backgroundSize = '18px';
+    autocomplete.style.boxSizing = 'border-box';
+
+    container.appendChild(autocomplete);
+
+    // Listen for place selection
+    autocomplete.addEventListener('gmp-placeselect', ({ detail: { place } }) => {
+      if (!place || !place.geometry) {
+        showToast('Please select a place from the list.', 'ℹ️');
+        return;
+      }
+
+      const lat = place.geometry.location.lat();
+      const lng = place.geometry.location.lng();
+
+      selectedPlace = {
+        name: place.displayName?.text || place.name || 'Unnamed place',
+        address: place.formattedAddress || place.address?.formattedAddress || 'Address not available',
+        lat: lat,
+        lng: lng,
+        placeId: place.id || null,
+      };
+
+      // Update map
+      mapInstance.setCenter({ lat, lng });
+      mapInstance.setZoom(16);
+
+      if (markerInstance) markerInstance.setMap(null);
+      markerInstance = new google.maps.Marker({
+        position: { lat, lng },
+        map: mapInstance,
+        title: selectedPlace.name,
+        animation: google.maps.Animation.DROP,
+      });
+
+      // Show info
+      const info = document.getElementById('placeInfo');
+      info.classList.add('show');
+      document.getElementById('placeName').textContent = selectedPlace.name;
+      document.getElementById('placeAddress').textContent = selectedPlace.address;
+
+      document.getElementById('step3Next').classList.add('ready');
+    });
+
+    // Handle Enter key fallback (manual search)
+    autocomplete.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = autocomplete.value?.trim();
+        if (val && !selectedPlace) {
+          const geocoder = new google.maps.Geocoder();
+          geocoder.geocode({ address: val }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+              const r = results[0];
+              const loc = r.geometry.location;
+              selectedPlace = {
+                name: val,
+                address: r.formatted_address || val,
+                lat: loc.lat(),
+                lng: loc.lng(),
+                placeId: null,
+              };
+              mapInstance.setCenter({ lat: loc.lat(), lng: loc.lng() });
+              mapInstance.setZoom(16);
+              if (markerInstance) markerInstance.setMap(null);
+              markerInstance = new google.maps.Marker({
+                position: { lat: loc.lat(), lng: loc.lng() },
+                map: mapInstance,
+                title: val,
+                animation: google.maps.Animation.DROP,
+              });
+              const info = document.getElementById('placeInfo');
+              info.classList.add('show');
+              document.getElementById('placeName').textContent = selectedPlace.name;
+              document.getElementById('placeAddress').textContent = selectedPlace.address;
+              document.getElementById('step3Next').classList.add('ready');
+            } else {
+              showToast('Could not find that place. Try selecting from the suggestions.', '🔍');
+            }
+          });
+        }
+      }
+    });
+  }
+
+  // Fallback if Google Maps doesn't load
+  window.initMap = initMap;
+
+  // ============================================================
+  //  TOAST NOTIFICATION
+  // ============================================================
+  let toastTimeout = null;
+
+  function showToast(msg, emoji = '💕') {
+    const toast = document.getElementById('toast');
+    const msgEl = document.getElementById('toastMsg');
+    document.querySelector('.toast .toast-emoji').textContent = emoji;
+    msgEl.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
+  // ============================================================
+  //  STEP 4: SUMMARY
+  // ============================================================
+  function buildSummary() {
     const d = new Date(dateInput.value + 'T00:00:00');
-    const dateStr = d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+    const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     document.getElementById('sumDate').textContent = dateStr;
     document.getElementById('sumTime').textContent = selectedTime || '—';
 
     let plan = [];
-    if(choices.has('optEat')) plan.push('Eat');
-    if(choices.has('optDrinks')) plan.push('Drinks');
+    if (choices.has('optEat')) plan.push('Eat');
+    if (choices.has('optDrinks')) plan.push('Drinks');
     document.getElementById('sumChoice').textContent = plan.length ? plan.join(' & ') : '—';
+
+    const placeName = selectedPlace ? selectedPlace.name : '—';
+    document.getElementById('sumPlace').textContent = placeName;
+
+    // Enable calendar & notify buttons only if place is selected
+    const hasPlace = !!selectedPlace;
+    document.getElementById('btnCalendar').style.opacity = hasPlace ? '1' : '0.4';
+    document.getElementById('btnCalendar').style.pointerEvents = hasPlace ? 'auto' : 'none';
+    document.getElementById('btnNotify').style.opacity = hasPlace ? '1' : '0.4';
+    document.getElementById('btnNotify').style.pointerEvents = hasPlace ? 'auto' : 'none';
   }
 
-  function finalConfirm(){
+  // ============================================================
+  //  CALENDAR: generate .ics file
+  // ============================================================
+  function addToCalendar() {
+    if (!selectedPlace) {
+      showToast('Please select a place first.', '📍');
+      return;
+    }
+    const dateVal = dateInput.value;
+    const timeVal = selectedTime;
+    if (!dateVal || !timeVal) {
+      showToast('Please pick a date and time first.', '⏰');
+      return;
+    }
+
+    // Parse date and time
+    const [month, day, year] = dateVal.split('-');
+    const timeParts = timeVal.match(/(\d+):(\d+)\s*(AM|PM)/);
+    if (!timeParts) {
+      showToast('Invalid time format.', '⏰');
+      return;
+    }
+    let hour = parseInt(timeParts[1]);
+    const minute = parseInt(timeParts[2]);
+    const ampm = timeParts[3];
+    if (ampm === 'PM' && hour !== 12) hour += 12;
+    if (ampm === 'AM' && hour === 12) hour = 0;
+
+    const start = new Date(year, month - 1, day, hour, minute);
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000); // 2 hours
+
+    const formatICS = (d) => {
+      return d.getUTCFullYear() +
+        String(d.getUTCMonth() + 1).padStart(2, '0') +
+        String(d.getUTCDate()).padStart(2, '0') +
+        'T' +
+        String(d.getUTCHours()).padStart(2, '0') +
+        String(d.getUTCMinutes()).padStart(2, '0') +
+        '00Z';
+    };
+
+    const placeStr = selectedPlace.name + (selectedPlace.address ? ' (' + selectedPlace.address + ')' : '');
+    const planStr = Array.from(choices).map(c => c === 'optEat' ? '🍽️ Eat' : '🍷 Drinks').join(' & ') || 'Date';
+
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//DateApp//EN',
+      'BEGIN:VEVENT',
+      'SUMMARY:Date with you 💕',
+      'DTSTART:' + formatICS(start),
+      'DTEND:' + formatICS(end),
+      'LOCATION:' + placeStr,
+      'DESCRIPTION:Date plan: ' + planStr + '\\nSee you soon! ✨',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\n');
+
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'date.ics';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('Date added to your calendar! 📅', '📅');
+  }
+
+  // ============================================================
+  //  NOTIFICATION (Web Notification API)
+  // ============================================================
+  function sendNotification() {
+    if (!selectedPlace) {
+      showToast('Please select a place first.', '📍');
+      return;
+    }
+    const dateVal = dateInput.value;
+    const timeVal = selectedTime;
+    if (!dateVal || !timeVal) {
+      showToast('Please pick a date and time first.', '⏰');
+      return;
+    }
+
+    const d = new Date(dateVal + 'T00:00:00');
+    const dateStr = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const placeStr = selectedPlace.name;
+    const planStr = Array.from(choices).map(c => c === 'optEat' ? 'Eat' : 'Drinks').join(' & ') || 'Date';
+
+    const title = '💕 Date Confirmed!';
+    const body = `${dateStr} at ${timeVal} · ${planStr} · ${placeStr}`;
+
+    if (!('Notification' in window)) {
+      showToast('Your browser does not support notifications. But we\'ll remember! 📝', 'ℹ️');
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '💕' });
+      showToast('Notification sent! 🔔', '🔔');
+    } else if (Notification.permission === 'denied') {
+      showToast('Please allow notifications in your browser settings.', '🔕');
+    } else {
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+          new Notification(title, { body, icon: '💕' });
+          showToast('Notification sent! 🔔', '🔔');
+        } else {
+          showToast('Notification permission denied. You can still confirm below!', '🔕');
+        }
+      });
+    }
+  }
+
+  // ============================================================
+  //  FINAL CONFIRM — celebration + toast + notification
+  // ============================================================
+  function finalConfirm() {
+    // Build the final message
+    const dateStr = document.getElementById('sumDate').textContent;
+    const timeStr = document.getElementById('sumTime').textContent;
+    const placeStr = document.getElementById('sumPlace').textContent;
+    const planStr = document.getElementById('sumChoice').textContent;
+
+    // Celebration confetti 🎉
+    launchConfetti();
+
+    // Show a beautiful confirmation inside the card
     const card = document.getElementById('card');
     card.innerHTML = `
       <span class="confirm-icon">🥂</span>
       <div class="eyebrow">Confirmed</div>
       <h1>I can't wait.</h1>
-      <p class="final-msg">${document.getElementById('sumDate').textContent}, at ${document.getElementById('sumTime').textContent}.<br>See you soon. 💕</p>
+      <p class="final-msg">
+        ${dateStr} at ${timeStr}<br />
+        ${placeStr !== '—' ? '📍 ' + placeStr : ''}<br />
+        ${planStr !== '—' ? '📋 ' + planStr : ''}<br />
+        <span style="font-size:15px;display:block;margin-top:12px;">See you soon. 💕</span>
+      </p>
     `;
+
+    // Send a notification
+    const title = '💕 Date Confirmed!';
+    const body = `${dateStr} at ${timeStr} · ${planStr} · ${placeStr}`;
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '💕' });
+    } else if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+          new Notification(title, { body, icon: '💕' });
+        }
+      });
+    }
+
+    // Show a toast
+    showToast('Date confirmed! Check your notifications 💕', '💕');
+
+    console.log('💕 DATE CONFIRMED 💕');
+    console.log('Date:', dateStr);
+    console.log('Time:', timeStr);
+    console.log('Place:', placeStr);
+    console.log('Plan:', planStr);
   }
+
+  // ============================================================
+  //  CONFETTI CELEBRATION
+  // ============================================================
+  function launchConfetti() {
+    const container = document.createElement('div');
+    container.className = 'celebration';
+    document.body.appendChild(container);
+    const emojis = ['🎉', '💕', '✨', '🌟', '💗', '🌸', '🌹', '🥂', '💖', '🎊'];
+    for (let i = 0; i < 40; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      el.style.left = Math.random() * 100 + '%';
+      el.style.animationDuration = (2.5 + Math.random() * 3) + 's';
+      el.style.animationDelay = (Math.random() * 2) + 's';
+      el.style.fontSize = (20 + Math.random() * 24) + 'px';
+      container.appendChild(el);
+    }
+    setTimeout(() => container.remove(), 6000);
+  }
+
+  // ============================================================
+  //  INIT: do NOT auto-set tomorrow's date; just set min
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', () => {
+    // Set minimum date to today, but leave value empty
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.setAttribute('min', today);
+    // No pre-filled value
+
+    // If Google Maps API key is missing, show a friendly message
+    if (GOOGLE_MAPS_API_KEY === 'YOUR_API_KEY' || !GOOGLE_MAPS_API_KEY) {
+      const input = document.getElementById('placeInputContainer');
+      // Will be handled by initMap fallback
+    }
+  });
+
+  // ============================================================
+  //  RESPONSIVE: fix No button position on mobile
+  // ============================================================
+  function fixNoButton() {
+    if (window.innerWidth <= 420) {
+      noBtn.style.position = 'relative';
+      noBtn.style.top = 'auto';
+      noBtn.style.left = 'auto';
+      noBtn.style.transform = 'none';
+    } else {
+      noBtn.style.position = 'absolute';
+    }
+  }
+  window.addEventListener('resize', fixNoButton);
+  document.addEventListener('DOMContentLoaded', fixNoButton);
 </script>
 
 </body>
